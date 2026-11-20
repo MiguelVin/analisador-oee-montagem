@@ -24,6 +24,11 @@ LARANJA = "#eb6834"
 VERDE_AGUA = "#1baf7a"
 CINZA = "#c3c2b7"
 
+# Cores de estado (reservadas para alerta, nunca usadas como série)
+VERMELHO = "#d7191c"  # gargalo acima do takt: a linha não atende a demanda
+AMARELO = "#f2b600"  # gargalo dentro do takt: ponto de atenção
+AMARELO_TEXTO = "#8a6100"  # amarelo escurecido para texto legível sobre fundo claro
+
 SUPERFICIE = "#fcfcfb"
 TINTA = "#0b0b0b"
 TINTA_SECUNDARIA = "#52514e"
@@ -207,10 +212,30 @@ def grafico_pareto(tabela: pd.DataFrame, coluna: str, unidade: str) -> go.Figure
 # Yamazumi
 # ---------------------------------------------------------------------------
 def grafico_yamazumi(tabela: pd.DataFrame, takt_s: float, posto_gargalo: str) -> go.Figure:
-    """Tempo de cada posto empilhado por tipo de atividade, com a linha do takt."""
+    """
+    Tempo de cada posto empilhado por tipo de atividade, com a linha do takt.
+    O posto gargalo ganha faixa de fundo, rótulo e nome coloridos:
+    vermelho se passa do takt (não atende a demanda), amarelo se ainda está dentro dele.
+    """
     tipos = [c for c in tabela.columns if c not in ("posto", "nome_posto", "total_s")]
+    tabela = tabela.reset_index(drop=True)
+    total_gargalo = tabela.loc[tabela["posto"] == posto_gargalo, "total_s"].max()
+    acima_do_takt = total_gargalo > takt_s
+    cor_alerta = VERMELHO if acima_do_takt else AMARELO
+    cor_texto_alerta = VERMELHO if acima_do_takt else AMARELO_TEXTO
+
     rotulos = tabela["posto"] + "<br>" + tabela["nome_posto"].str.replace(" ", "<br>", n=1)
+    # Nome do gargalo no eixo X em negrito e na cor do alerta
+    textos_eixo = [
+        f"<span style='color:{cor_texto_alerta}'><b>{r}</b></span>" if p == posto_gargalo else r
+        for r, p in zip(rotulos, tabela["posto"])
+    ]
     fig = go.Figure()
+    indice_gargalo = int(tabela.index[tabela["posto"] == posto_gargalo][0])
+    fig.add_vrect(
+        x0=indice_gargalo - 0.5, x1=indice_gargalo + 0.5, layer="below", line_width=0,
+        fillcolor=cor_alerta, opacity=0.16,
+    )
     for i, tipo in enumerate(tipos):
         cor = CORES_TIPO.get(tipo, [AZUL, VERDE_AGUA, LARANJA][i % 3])
         fig.add_trace(
@@ -221,11 +246,17 @@ def grafico_yamazumi(tabela: pd.DataFrame, takt_s: float, posto_gargalo: str) ->
         )
     # Total acima de cada barra; o gargalo ganha destaque no texto (não só na cor)
     for rotulo, posto, total in zip(rotulos, tabela["posto"], tabela["total_s"]):
-        eh_gargalo = posto == posto_gargalo
-        fig.add_annotation(
-            x=rotulo, y=total, text=f"<b>{total:.0f} s · gargalo</b>" if eh_gargalo else f"{total:.0f} s",
-            showarrow=False, yshift=12, font=dict(color=TINTA if eh_gargalo else TINTA_SECUNDARIA, size=12),
-        )
+        if posto == posto_gargalo:
+            situacao = "acima do takt" if acima_do_takt else "dentro do takt"
+            fig.add_annotation(
+                x=rotulo, y=total, text=f"<b>GARGALO · {total:.0f} s</b><br>{situacao}",
+                showarrow=False, yshift=22, font=dict(color=cor_texto_alerta, size=13),
+            )
+        else:
+            fig.add_annotation(
+                x=rotulo, y=total, text=f"{total:.0f} s",
+                showarrow=False, yshift=12, font=dict(color=TINTA_SECUNDARIA, size=12),
+            )
     fig.add_hline(
         y=takt_s, line=dict(color=TINTA, width=2),
         annotation_text=f"Takt {takt_s:.1f} s".replace(".", ","), annotation_position="top right",
@@ -233,5 +264,6 @@ def grafico_yamazumi(tabela: pd.DataFrame, takt_s: float, posto_gargalo: str) ->
     )
     _layout_base(fig, "segundos por peça", altura=460)
     fig.update_layout(barmode="stack", legend_traceorder="normal")
-    fig.update_yaxes(range=[0, max(tabela["total_s"].max(), takt_s) * 1.18])
+    fig.update_xaxes(tickmode="array", tickvals=list(rotulos), ticktext=textos_eixo)
+    fig.update_yaxes(range=[0, max(tabela["total_s"].max(), takt_s) * 1.25])
     return fig

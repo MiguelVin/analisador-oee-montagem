@@ -30,12 +30,11 @@ from src.relatorio import gerar_relatorio_excel
 from src.simulador import Cenario, simular
 
 EXEMPLO = Path(__file__).parent / "dados" / "exemplo_montagem.xlsx"
-ICONE_CLASSE = {"Classe mundial": "🟢", "Bom": "🟢", "Regular": "🟡", "Crítico": "🔴"}
+COR_CLASSE = {"Classe mundial": "green", "Bom": "green", "Regular": "yellow", "Crítico": "red"}
 CAIXA_PRIORIDADE = {"alta": st.error, "media": st.warning, "info": st.info}
-ICONE_PRIORIDADE = {"alta": "🚨", "media": "⚠️", "info": "ℹ️"}
 NAO_USAR = "— não usar —"
 
-st.set_page_config(page_title="Analisador de OEE · Montagem", page_icon="🏭", layout="wide")
+st.set_page_config(page_title="Analisador de OEE · Montagem", layout="wide")
 
 
 def pct(valor: float) -> str:
@@ -46,8 +45,9 @@ def num(valor: float, casas: int = 0) -> str:
     return f"{valor:,.{casas}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def metrica(coluna, rotulo: str, valor: str, detalhe: str) -> None:
-    coluna.metric(rotulo, valor, detalhe, delta_color="off", delta_arrow="off", border=True)
+def metrica(coluna, rotulo: str, valor: str, detalhe: str, cor: str = "off") -> None:
+    """`cor`: "off" (cinza) ou uma cor da paleta do tema ("red", "yellow", "green") para sinalizar estado."""
+    coluna.metric(rotulo, valor, detalhe, delta_color=cor, delta_arrow="off", border=True)
 
 
 @st.cache_data(show_spinner="Lendo a planilha…")
@@ -58,7 +58,7 @@ def ler_abas(conteudo: bytes) -> dict[str, pd.DataFrame]:
 def tela_mapeamento(brutas: dict[str, pd.DataFrame], sugestao: Mapeamento, chave: str) -> Mapeamento:
     """Mostra o de-para de abas e colunas. Já vem preenchido com a sugestão automática."""
     escolhido = Mapeamento()
-    with st.expander("🔗 Mapeamento de colunas", expanded=not sugestao.completo):
+    with st.expander("Mapeamento de colunas", expanded=not sugestao.completo):
         st.caption(
             "Indique onde está cada informação na **sua** planilha. O sistema já sugere pelo nome "
             "das colunas; confira, corrija o que for preciso e salve o mapeamento para os próximos meses."
@@ -87,7 +87,7 @@ def tela_mapeamento(brutas: dict[str, pd.DataFrame], sugestao: Mapeamento, chave
                     format_func=lambda x: NAO_USAR if x is None else x,
                 )
         st.download_button(
-            "💾 Salvar este mapeamento (.json)", escolhido.para_json(),
+            "Salvar este mapeamento (.json)", escolhido.para_json(),
             file_name="mapeamento_colunas.json", mime="application/json",
         )
     return escolhido
@@ -186,7 +186,7 @@ st.caption(
     f"{len(producao)} turnos · takt {num(takt, 1)} s"
 )
 for aviso in dados.avisos:
-    st.warning(aviso, icon="⚠️")
+    st.warning(aviso)
 if producao.empty:
     st.info("Nenhum turno corresponde aos filtros selecionados.")
     st.stop()
@@ -207,7 +207,7 @@ gargalos = [analisar_gargalo(postos_linha, m, takt) for m in modelos_com_tempos]
 achados = gerar_diagnostico(resultado, consolidado, paradas, pareto_motivos, por_turno, por_dia, gargalos)
 
 aba_diag, aba_oee, aba_pareto, aba_gargalo, aba_sim = st.tabs(
-    ["🧭 Diagnóstico", "📈 OEE", "📊 Pareto de paradas", "⚙️ Gargalo e balanceamento", "🔮 Simulador"]
+    ["Diagnóstico", "OEE", "Pareto de paradas", "Gargalo e balanceamento", "Simulador"]
 )
 
 # ---------------------------------------------------------------------------
@@ -215,17 +215,18 @@ aba_diag, aba_oee, aba_pareto, aba_gargalo, aba_sim = st.tabs(
 # ---------------------------------------------------------------------------
 with aba_diag:
     c1, c2, c3, c4 = st.columns(4)
-    metrica(c1, "OEE", pct(resultado.oee), f"{ICONE_CLASSE[resultado.classificacao]} {resultado.classificacao}")
+    metrica(c1, "OEE", pct(resultado.oee), resultado.classificacao, COR_CLASSE[resultado.classificacao])
     metrica(c2, "Peças boas", num(resultado.pecas_boas), f"de {num(resultado.pecas_produzidas)} produzidas")
     metrica(c3, "Tempo parado", f"{num(resultado.tempo_parada_min)} min", f"{pct(resultado.tempo_parada_min / resultado.tempo_planejado_min)} do planejado")
     if gargalos:
         criticos = [g for g in gargalos if not g.atende_demanda]
         metrica(c4, "Atende a demanda?", "Não" if criticos else "Sim",
-                f"{', '.join(g.modelo for g in criticos)} acima do takt" if criticos else f"takt {num(takt, 1)} s")
+                f"{', '.join(g.modelo for g in criticos)} acima do takt" if criticos else f"takt {num(takt, 1)} s",
+                "red" if criticos else "green")
 
     st.subheader("Principais achados")
     for achado in achados:
-        CAIXA_PRIORIDADE[achado.prioridade](f"**{achado.titulo}**\n\n{achado.texto}", icon=ICONE_PRIORIDADE[achado.prioridade])
+        CAIXA_PRIORIDADE[achado.prioridade](f"**{achado.titulo}**\n\n{achado.texto}")
 
     if len(todas_linhas) > 1:
         st.subheader("Comparativo entre linhas")
@@ -245,7 +246,7 @@ with aba_diag:
 # ---------------------------------------------------------------------------
 with aba_oee:
     c1, c2, c3, c4 = st.columns(4)
-    metrica(c1, "OEE", pct(resultado.oee), f"{ICONE_CLASSE[resultado.classificacao]} {resultado.classificacao}")
+    metrica(c1, "OEE", pct(resultado.oee), resultado.classificacao, COR_CLASSE[resultado.classificacao])
     metrica(c2, "Disponibilidade", pct(resultado.disponibilidade), f"{num(resultado.tempo_parada_min)} min parados")
     metrica(c3, "Performance", pct(resultado.performance), "ritmo vs. ciclo ideal")
     metrica(c4, "Qualidade", pct(resultado.qualidade), f"{num(resultado.pecas_boas)} de {num(resultado.pecas_produzidas)} peças boas")
@@ -320,12 +321,13 @@ with aba_gargalo:
         g = analisar_gargalo(postos_analise, modelo, takt)
         c1, c2, c3, c4 = st.columns(4)
         metrica(c1, "Takt time", f"{num(takt, 1)} s", f"{num(demanda)} peças/dia")
-        metrica(c2, "Gargalo", f"{g.posto_gargalo} · {num(g.tempo_gargalo_s)} s", g.nome_posto_gargalo)
+        metrica(c2, "Gargalo", f"{g.posto_gargalo} · {num(g.tempo_gargalo_s)} s", g.nome_posto_gargalo,
+                "yellow" if g.atende_demanda else "red")
         metrica(c3, "Capacidade", f"{num(g.capacidade_pecas_hora)} peças/h", f"{num(g.capacidade_pecas_hora * tempo_disponivel / 60)} peças/dia")
         metrica(c4, "Balanceamento", pct(g.eficiencia_balanceamento), f"{g.numero_postos} postos (mín. teórico {g.postos_minimos})")
 
         if g.atende_demanda:
-            st.success(f"A linha atende a demanda: o gargalo ({g.posto_gargalo}) está {num(-g.diferenca_takt_s, 1)} s abaixo do takt.", icon="✅")
+            st.success(f"A linha atende a demanda: o gargalo ({g.posto_gargalo}) está {num(-g.diferenca_takt_s, 1)} s abaixo do takt.")
         else:
             if sem_desperdicio:
                 acao = "Mesmo sem desperdício, é preciso redistribuir operações ou adicionar recurso."
@@ -338,8 +340,7 @@ with aba_gargalo:
             outros = [p for p in g.postos_acima_takt if p != g.posto_gargalo]
             st.error(
                 f"**A linha não atende a demanda.** O gargalo {g.posto_gargalo} está {num(g.diferenca_takt_s, 1)} s acima do takt"
-                + (f" (também acima: {', '.join(outros)})" if outros else "") + f". {acao}",
-                icon="🚨",
+                + (f" (também acima: {', '.join(outros)})" if outros else "") + f". {acao}"
             )
 
         st.subheader(f"Yamazumi · {linha} · modelo {modelo}" + (" · sem desperdício" if sem_desperdicio else ""))
@@ -398,7 +399,7 @@ with st.sidebar:
         "Takt (s)": num(takt, 1),
     }
     st.download_button(
-        "📥 Baixar relatório (.xlsx)",
+        "Baixar relatório (.xlsx)",
         gerar_relatorio_excel(filtros, resultado, achados, por_dia, por_turno, pareto_motivos, tabela_y),
         file_name=f"relatorio_oee_{normalizar_texto(linha)}_{inicio:%Y%m%d}_{fim:%Y%m%d}.xlsx",
         type="primary", width="stretch",

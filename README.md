@@ -2,7 +2,7 @@
 
 Painel em Python que transforma a planilha de apontamentos de uma linha de montagem em **diagnóstico pronto**: OEE decomposto, Pareto das paradas, gargalo vs. takt time (Yamazumi) e um simulador que traduz melhoria em **peças boas a mais**.
 
-**[▶ Abrir o app online](https://SEU-APP.streamlit.app)** · dados 100% fictícios, gerados por script
+**[Abrir o app online](https://SEU-APP.streamlit.app)** · dados 100% fictícios, gerados por script
 
 ![Aba de diagnóstico](docs/img/diagnostico.png)
 
@@ -18,12 +18,12 @@ Em muitas fábricas o OEE é calculado à mão numa planilha, uma vez por mês, 
 
 | Aba | Pergunta que responde |
 |---|---|
-| 🧭 **Diagnóstico** | O que está errado e por onde começar? Achados em frases prontas, ordenados por prioridade. |
-| 📈 **OEE** | Para onde foi o tempo? Cascata do tempo planejado até o efetivo, evolução por dia e turno. |
-| 📊 **Pareto de paradas** | Quais poucas causas concentram a maior parte da perda? Classes ABC por motivo, categoria 6M ou posto. |
-| ⚙️ **Gargalo e balanceamento** | A linha atende a demanda? Yamazumi por posto (agrega valor / não agrega / desperdício) contra o takt. |
-| 🔮 **Simulador** | Se reduzirmos a causa X pela metade, quanto ganhamos em OEE e em peças? |
-| 📥 **Relatório** | Excel formatado com resumo, achados, OEE por dia/turno, Pareto e Yamazumi, pronto para a reunião. |
+| **Diagnóstico** | O que está errado e por onde começar? Achados em frases prontas, ordenados por prioridade (vermelho = crítico, amarelo = atenção). |
+| **OEE** | Para onde foi o tempo? Cascata do tempo planejado até o efetivo, evolução por dia e turno. |
+| **Pareto de paradas** | Quais poucas causas concentram a maior parte da perda? Classes ABC por motivo, categoria 6M ou posto. |
+| **Gargalo e balanceamento** | A linha atende a demanda? Yamazumi por posto (agrega valor / não agrega / desperdício) contra o takt. O gargalo fica destacado em vermelho quando passa do takt e em amarelo quando ainda está dentro dele. |
+| **Simulador** | Se reduzirmos a causa X pela metade, quanto ganhamos em OEE e em peças? |
+| **Relatório** | Excel formatado com resumo, achados, OEE por dia/turno, Pareto e Yamazumi, pronto para a reunião. |
 
 <table>
 <tr>
@@ -95,7 +95,7 @@ Assim a primeira causa é sempre classe A.
 
 Cada fábrica nomeia as colunas de um jeito ("Qtd Produzida", "Célula", "Rework", "Downtime"...). O app **não exige que você renomeie nada**:
 
-1. Ao carregar a planilha, o painel **🔗 Mapeamento de colunas** tenta reconhecer cada campo em três etapas:
+1. Ao carregar a planilha, o painel **Mapeamento de colunas** tenta reconhecer cada campo em três etapas:
    1. pelo nome exato;
    2. por uma lista de sinônimos de fábrica;
    3. por nome parecido, o que pega erros de digitação.

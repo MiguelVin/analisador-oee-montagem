@@ -4,6 +4,16 @@ primaryColor = "#2a78d6"
 backgroundColor = "#fcfcfb"
 secondaryBackgroundColor = "#f3f2ee"
 textColor = "#0b0b0b"
+# Cores de estado mais fortes: alertas críticos (vermelho) e de atenção (amarelo) bem visíveis
+redColor = "#d7191c"
+redBackgroundColor = "#fbcfcc"
+redTextColor = "#8f0f12"
+yellowColor = "#f2b600"
+yellowBackgroundColor = "#fde49a"
+yellowTextColor = "#6e4b00"
+greenColor = "#13945f"
+greenBackgroundColor = "#cdeedd"
+greenTextColor = "#0b5e3b"
 
 [server]
 headless = true
