@@ -1,8 +1,8 @@
-# Analisador de OEE e Gargalos · Linha de Montagem
+﻿# Analisador de OEE e Gargalos · Linha de Montagem
 
 Painel em Python que transforma a planilha de apontamentos de uma linha de montagem em **diagnóstico pronto**: OEE decomposto, Pareto das paradas, gargalo vs. takt time (Yamazumi) e um simulador que traduz melhoria em **peças boas a mais**.
 
-**[Abrir o app online](https://SEU-APP.streamlit.app)** · dados 100% fictícios, gerados por script
+**[Abrir o app online](https://oee-montagem.streamlit.app)** · dados 100% fictícios, gerados por script
 
 ![Aba de diagnóstico](docs/img/diagnostico.png)
 
@@ -118,7 +118,7 @@ Baixe a planilha modelo pelo botão na barra lateral do app.
 ## Como rodar localmente
 
 ```powershell
-git clone https://github.com/SEU-USUARIO/analisador-oee-montagem.git
+git clone https://github.com/MiguelVin/analisador-oee-montagem.git
 cd analisador-oee-montagem
 python -m venv .venv
 .\.venv\Scripts\activate          # Linux/Mac: source .venv/bin/activate
